@@ -8,32 +8,39 @@ import logo from '../assets/logo.svg';
 import like from '../assets/like.svg';
 import dislike from '../assets/dislike.svg';
 import api from '../services/api';
-import loadUsers from '../services/loadUsers';
 
 export default function Main( { match }) {
 
-    const { id : loggedUserId } = match.params;
     const [users, setUsers] = useState([]);
 
+    useEffect(() => {
+        async function loadUsers() {
+            const response = await api.post('/devs/index', [] ,{
+                headers : { 
+                    fromdevid: match.params.id
+                }
+            });
+            setUsers(response.data);
+        }
+        loadUsers();
+    }, [match.params.id]);
 
-    // Função que rodará ao ter o usuário logado
-    async function runLoadUsers() {
-        setUsers(await loadUsers(loggedUserId));
-    }
-
-    useEffect(runLoadUsers, [loggedUserId]);
-
-    async function handleLike(id, type = true) {
+    async function handleLike(id) {
         console.log('like', id)
 
-        const stringgedType = type ? '' : 'dis';
-        const url = `/devs/${id}/${stringgedType}likes`;
-        console.log(url);
-        // return;
-
-        await api.post(url, null, {
+        await api.post(`/devs/${id}/likes`, null, {
             headers: {
-                fromDevId: loggedUserId
+                fromDevId: match.params.id
+            }
+        })
+        setUsers(users.filter( user => user._id !== id))
+    }
+    async function handleDislike(id) {
+        console.log('dislike', id)
+
+        await api.post(`/devs/${id}/dislikes`, null, {
+            headers: {
+                fromDevId: match.params.id
             }
         })
         setUsers(users.filter( user => user._id !== id))
@@ -58,7 +65,7 @@ export default function Main( { match }) {
                         </footer>
                         <div className="buttons">
 
-                            <button type="button" onClick={() => handleLike(user._id, false)}>
+                            <button type="button" onClick={() => handleDislike(user._id)}>
                                 <img src={dislike} alt="like"/>
                             </button>
 
